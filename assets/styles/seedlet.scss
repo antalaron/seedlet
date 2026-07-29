@@ -7,13 +7,252 @@
  * file that was distributed with this source code.
  */
 
+// -----------------------------------------------------------------------
+// Seedlet design tokens
+// -----------------------------------------------------------------------
+// A small, distinctive palette used both to override Bootstrap's Sass
+// variables below (so every generated utility/component picks it up
+// automatically) and directly in the custom component styles further
+// down this file. Colors are written as literal hex values on purpose:
+// Bootstrap's own `darken()`/`lighten()`/`mix()` helpers rely on Dart
+// Sass' legacy global color functions, which are deprecated upstream.
+// Avoiding them here keeps our own stylesheet free of new deprecation
+// warnings (see webpack.config.js for the `quietDeps` handling of the
+// warnings that Bootstrap's *own* SCSS still triggers).
+$seedlet-teal: #0f9e91;
+$seedlet-teal-dark: #0b7d73;
+$seedlet-navy: #101826;
+$seedlet-navy-soft: #1b2536;
+$seedlet-slate: #64748b;
+$seedlet-slate-dark: #47556a;
+$seedlet-blue: #0284c7;
+$seedlet-blue-dark: #026aa2;
+$seedlet-green: #16a34a;
+$seedlet-green-dark: #12833c;
+$seedlet-amber: #d97706;
+$seedlet-amber-dark: #a85d04;
+$seedlet-red: #dc2626;
+$seedlet-red-dark: #b91c1c;
+$seedlet-body-bg: #f4f6f8;
+$seedlet-body-color: #1f2937;
+
+// -----------------------------------------------------------------------
+// Bootstrap variable overrides (must come before the Bootstrap import)
+// -----------------------------------------------------------------------
+$font-family-sans-serif: 'Open Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+$primary: $seedlet-teal;
+$secondary: $seedlet-slate;
+$success: $seedlet-green;
+$info: $seedlet-blue;
+$warning: $seedlet-amber;
+$danger: $seedlet-red;
+$dark: $seedlet-navy;
+$light: #eef1f4;
+
+$body-bg: $seedlet-body-bg;
+$body-color: $seedlet-body-color;
+$link-color: $seedlet-teal-dark;
+
+$border-radius: 0.5rem;
+$border-radius-sm: 0.375rem;
+$border-radius-lg: 0.75rem;
+$border-radius-xl: 1rem;
+
+$card-border-color: rgba(#000, 0.08);
+$box-shadow-sm: 0 1px 2px rgba(#000, 0.06);
+$box-shadow: 0 2px 8px rgba(#000, 0.08);
+
+$navbar-dark-color: rgba(#fff, 0.75);
+$navbar-dark-hover-color: #fff;
+$navbar-dark-active-color: #fff;
+
 @import 'bootstrap/scss/bootstrap';
+
+// -----------------------------------------------------------------------
+// Layout
+// -----------------------------------------------------------------------
+body {
+  background-color: $seedlet-body-bg;
+}
+
+.seedlet-shell {
+  max-width: 1400px;
+  margin-inline: auto;
+}
 
 .min-width-0 {
   min-width: 0;
 }
 
+// -----------------------------------------------------------------------
+// Header / brand
+// -----------------------------------------------------------------------
+.seedlet-header {
+  background-color: $seedlet-navy;
+  padding-block: 0.6rem;
+}
+
+.seedlet-brand {
+  color: #fff;
+  text-decoration: none;
+}
+
+.seedlet-brand-logo {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: $border-radius-sm;
+  box-shadow: 0 1px 3px rgba(#000, 0.45);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.seedlet-brand-text {
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+.seedlet-brand-tagline {
+  font-size: 0.7rem;
+  color: rgba(#fff, 0.6);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+@media (max-width: 575.98px) {
+  .seedlet-brand-tagline {
+    display: none;
+  }
+}
+
+.seedlet-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+// -----------------------------------------------------------------------
+// Torrent rows
+// -----------------------------------------------------------------------
+.torrent-row {
+  border-color: $card-border-color;
+  box-shadow: $box-shadow-sm;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.torrent-row:hover {
+  border-color: rgba($seedlet-teal, 0.35);
+  box-shadow: $box-shadow;
+}
+
 .torrent-row .btn {
   min-height: 2.5rem;
+}
+
+.torrent-name {
+  font-weight: 600;
+  color: $seedlet-body-color;
+}
+
+// Status badges: keep the existing bg-primary/bg-info/bg-success/bg-secondary
+// utility classes assigned in JS (no markup/behavior change needed), but
+// restyle them as soft, pill-shaped tags instead of Bootstrap's solid
+// contextual backgrounds, so the status coloring feels custom-designed.
+.torrent-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3em 0.7em;
+  font-size: 0.72em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: $border-radius-pill;
+
+  &.bg-secondary {
+    background-color: rgba($seedlet-slate, 0.14) !important;
+    color: $seedlet-slate-dark;
+  }
+
+  &.bg-info {
+    background-color: rgba($seedlet-blue, 0.14) !important;
+    color: $seedlet-blue-dark;
+  }
+
+  &.bg-primary {
+    background-color: rgba($seedlet-teal, 0.16) !important;
+    color: $seedlet-teal-dark;
+  }
+
+  &.bg-success {
+    background-color: rgba($seedlet-green, 0.16) !important;
+    color: $seedlet-green-dark;
+  }
+}
+
+// -----------------------------------------------------------------------
+// Progress bars (list rows + torrent details modal)
+// -----------------------------------------------------------------------
+// The percentage text is placed in a separate sibling element that is
+// absolutely positioned over the *whole* track width (rather than being
+// the text content of the filled segment itself), so it stays legible
+// regardless of how much of the bar is filled. The fill itself is a
+// translucent tint of the primary color, so a single dark label color
+// reads clearly against both the filled and unfilled portions.
+.seedlet-progress {
+  position: relative;
+  height: 1.5rem;
+  border-radius: $border-radius-pill;
+  background-color: rgba($seedlet-navy, 0.08);
+  overflow: hidden;
+}
+
+.seedlet-progress.seedlet-progress-lg {
+  height: 1.75rem;
+}
+
+.seedlet-progress .progress-bar {
+  background-color: rgba($seedlet-teal, 0.35);
+  transition: width 0.3s ease;
+}
+
+.seedlet-progress .progress-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: $seedlet-navy;
+  letter-spacing: 0.02em;
+}
+
+// -----------------------------------------------------------------------
+// Forms, inputs, modals
+// -----------------------------------------------------------------------
+.form-control:focus,
+.form-select:focus {
+  border-color: rgba($seedlet-teal, 0.5);
+  box-shadow: 0 0 0 0.2rem rgba($seedlet-teal, 0.15);
+}
+
+.modal-header {
+  background-color: $light;
+  border-top-left-radius: $border-radius-lg;
+  border-top-right-radius: $border-radius-lg;
+}
+
+.modal-content {
+  box-shadow: $box-shadow;
+}
+
+// -----------------------------------------------------------------------
+// Files table (torrent details modal)
+// -----------------------------------------------------------------------
+.file-name {
+  font-weight: 500;
 }
 

@@ -69,7 +69,9 @@ class TorrentList {
 
   updateSortDirectionButton () {
     const ascending = this.sort.direction === 'asc';
-    this.sortDirectionButton.textContent = ascending ? '↑ Ascending' : '↓ Descending';
+    this.sortDirectionButton.innerHTML = ascending
+      ? '<i class="fa-solid fa-arrow-up-wide-short" aria-hidden="true"></i> <span>Ascending</span>'
+      : '<i class="fa-solid fa-arrow-down-wide-short" aria-hidden="true"></i> <span>Descending</span>';
   }
 
   startPolling () {
@@ -168,10 +170,10 @@ class TorrentList {
     const progressBar = row.querySelector('[data-field="progressBar"]');
     const percent = formatPercent(torrent.percentDone);
     progressBar.style.width = percent;
-    progressBar.textContent = percent;
     progressBar.setAttribute('aria-valuenow', String(Math.round(torrent.percentDone * 100)));
     progressBar.setAttribute('aria-valuemin', '0');
     progressBar.setAttribute('aria-valuemax', '100');
+    row.querySelector('[data-field="progressLabel"]').textContent = percent;
 
     row.querySelector('[data-field="size"]').textContent = formatBytes(torrent.totalSize);
     row.querySelector('[data-field="rateDownload"]').textContent = formatRate(torrent.rateDownload);
@@ -182,7 +184,9 @@ class TorrentList {
 
     const toggleButton = row.querySelector('.torrent-toggle-btn');
     const isStopped = torrent.status === 0;
-    toggleButton.textContent = isStopped ? '▶️ Resume' : '⏸️ Pause';
+    toggleButton.innerHTML = isStopped
+      ? '<i class="fa-solid fa-play" aria-hidden="true"></i> <span>Resume</span>'
+      : '<i class="fa-solid fa-pause" aria-hidden="true"></i> <span>Pause</span>';
     toggleButton.dataset.paused = isStopped ? '1' : '0';
   }
 

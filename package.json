@@ -2,6 +2,8 @@
   "devDependencies": {
     "@babel/core": "^8.0.0",
     "@babel/preset-env": "^8.0.0",
+    "@fortawesome/fontawesome-free": "^7.3.1",
+    "@openfonts/open-sans_latin-ext": "^1.44.3",
     "@popperjs/core": "^2.11.8",
     "@symfony/webpack-encore": "^7.0.0",
     "babel-plugin-polyfill-corejs3": "^1.0.0",

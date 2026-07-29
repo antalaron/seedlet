@@ -31,7 +31,16 @@ Encore
     ];
   })
 
-  .enableSassLoader()
+  .enableSassLoader((options) => {
+    // Bootstrap 5's own SCSS still relies on legacy Dart Sass APIs
+    // (global color functions, @import, etc.) that emit a large number of
+    // deprecation warnings. `quietDeps` silences warnings that originate
+    // from dependencies (node_modules) while still reporting any
+    // deprecation triggered by our own stylesheets.
+    options.sassOptions = {
+      quietDeps: true
+    };
+  })
   .copyFiles({
     from: './assets/images',
     to: 'images/[path][name].[hash:8].[ext]'

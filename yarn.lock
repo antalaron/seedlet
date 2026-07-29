@@ -791,6 +791,11 @@
   resolved "https://registry.yarnpkg.com/@eslint/js/-/js-8.57.1.tgz#de633db3ec2ef6a3c89e2f19038063e8a122e2c2"
   integrity sha512-d9zaMRSTIKDLhctzH12MtXvJKSSUhaHcjV+2Z+GK+EEY7XKpP5yR4x+N3TAcHTcu963nIr+TMcCb4DBCYX1z6Q==
 
+"@fortawesome/fontawesome-free@^7.3.1":
+  version "7.3.1"
+  resolved "https://registry.yarnpkg.com/@fortawesome/fontawesome-free/-/fontawesome-free-7.3.1.tgz#9d7d7df8f850637e001d24e6cd901422b4b09099"
+  integrity sha512-wmglKKPDIkgV3aWlZzWECCPoGIkYCulzBwxG9+w7rc5BGapZ6cPMpoPOT8k36J0Ni7PPX6c/rsoMWfS4d1MUMg==
+
 "@humanwhocodes/config-array@^0.13.0":
   version "0.13.0"
   resolved "https://registry.yarnpkg.com/@humanwhocodes/config-array/-/config-array-0.13.0.tgz#fb907624df3256d04b9aa2df50d7aa97ec648748"
@@ -874,6 +879,11 @@
   dependencies:
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
+
+"@openfonts/open-sans_latin-ext@^1.44.3":
+  version "1.44.3"
+  resolved "https://registry.yarnpkg.com/@openfonts/open-sans_latin-ext/-/open-sans_latin-ext-1.44.3.tgz#f07aaf1130e48b05dcd92fe60c2493137f76c521"
+  integrity sha512-aVWTA+rYaUbwED+ngE2pm1EJ8HaWw/AuKXSOlPqtNIqr7Qj8voDhtsJPy6ns7vpLKalE0aPX12D2xnUVCJGPjw==
 
 "@parcel/watcher-android-arm64@2.6.0":
   version "2.6.0"

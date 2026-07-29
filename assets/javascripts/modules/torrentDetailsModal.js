@@ -15,6 +15,7 @@ class TorrentDetailsModal {
     this.titleLabel = element.querySelector('#torrent-details-modal-label');
     this.errorBox = element.querySelector('#details-error');
     this.progressBar = element.querySelector('#details-progress-bar');
+    this.progressLabel = element.querySelector('#details-progress-label');
 
     this.settingsForm = element.querySelector('#details-settings-form');
     this.priorityInput = element.querySelector('#details-priority');
@@ -60,7 +61,7 @@ class TorrentDetailsModal {
 
     const percent = formatPercent(torrent.percentDone);
     this.progressBar.style.width = percent;
-    this.progressBar.textContent = percent;
+    this.progressLabel.textContent = percent;
 
     this.element.querySelector('#details-status').textContent = torrent.statusLabel;
     this.element.querySelector('#details-size').textContent = formatBytes(torrent.totalSize);

@@ -2,18 +2,24 @@
 
 {% block body %}
     <div id="app" data-csrf-token="{{ csrf_token('api') }}">
-        <nav class="navbar navbar-dark bg-dark sticky-top shadow-sm">
-            <div class="container-fluid">
-                <span class="navbar-brand mb-0 h1">Seedlet</span>
+        <nav class="navbar navbar-dark seedlet-header sticky-top shadow-sm">
+            <div class="container-fluid seedlet-shell">
+                <span class="d-flex align-items-center gap-2 seedlet-brand">
+                    <img src="{{ asset('build/images/logo-mini.png') }}" alt="" width="36" height="36" class="seedlet-brand-logo">
+                    <span class="d-flex flex-column">
+                        <span class="seedlet-brand-text">Seedlet</span>
+                        <span class="seedlet-brand-tagline">Torrent client</span>
+                    </span>
+                </span>
                 <div class="d-flex gap-2">
-                    <button type="button" id="turtle-toggle-btn" class="btn btn-outline-light" aria-pressed="false" title="Turtle (alt-speed) mode" aria-label="Toggle turtle mode">
-                        🐢
+                    <button type="button" id="turtle-toggle-btn" class="btn btn-outline-light seedlet-icon-btn" aria-pressed="false" title="Turtle (alt-speed) mode" aria-label="Toggle turtle mode">
+                        <i class="fa-solid fa-gauge-simple" aria-hidden="true"></i>
                     </button>
-                    <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#settings-modal" aria-label="Global speed settings">
-                        ⚙️
+                    <button type="button" class="btn btn-outline-light seedlet-icon-btn" data-bs-toggle="modal" data-bs-target="#settings-modal" title="Global speed settings" aria-label="Global speed settings">
+                        <i class="fa-solid fa-sliders" aria-hidden="true"></i>
                     </button>
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-torrent-modal" aria-label="Add torrent">
-                        ＋ Add
+                    <button type="button" class="btn btn-primary seedlet-icon-btn" data-bs-toggle="modal" data-bs-target="#add-torrent-modal" aria-label="Add torrent">
+                        <i class="fa-solid fa-plus" aria-hidden="true"></i> <span>Add</span>
                     </button>
                 </div>
             </div>
@@ -21,7 +27,7 @@
 
         <div id="error-banner" class="alert alert-danger rounded-0 mb-0 py-2 text-center d-none" role="alert"></div>
 
-        <main class="container-fluid py-3">
+        <main class="container-fluid seedlet-shell py-3">
             <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                 <label class="form-label mb-0" for="sort-field">Sort by</label>
                 <select id="sort-field" class="form-select form-select-sm w-auto">
@@ -34,8 +40,8 @@
                     <option value="eta">ETA</option>
                     <option value="addedDate">Added</option>
                 </select>
-                <button type="button" id="sort-direction-btn" class="btn btn-outline-secondary btn-sm" data-direction="asc" aria-label="Toggle sort direction">
-                    ↑ Ascending
+                <button type="button" id="sort-direction-btn" class="btn btn-outline-secondary btn-sm seedlet-icon-btn" data-direction="asc" aria-label="Toggle sort direction">
+                    <i class="fa-solid fa-arrow-up-wide-short" aria-hidden="true"></i> <span>Ascending</span>
                 </button>
                 <span class="ms-auto text-muted small" id="torrent-count"></span>
             </div>
@@ -54,13 +60,14 @@
                                 <span class="fw-semibold text-truncate torrent-name" data-field="name"></span>
                                 <span class="badge torrent-status-badge" data-field="statusBadge"></span>
                             </div>
-                            <div class="progress mt-2" style="height: 8px;">
-                                <div class="progress-bar torrent-progress-bar" data-field="progressBar" role="progressbar"></div>
+                            <div class="progress seedlet-progress mt-2">
+                                <div class="progress-bar" data-field="progressBar" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+                                <span class="progress-value" data-field="progressLabel"></span>
                             </div>
                             <div class="d-flex flex-wrap column-gap-3 row-gap-1 mt-2 small text-muted">
                                 <span data-field="size"></span>
-                                <span>↓ <span data-field="rateDownload"></span></span>
-                                <span>↑ <span data-field="rateUpload"></span></span>
+                                <span><i class="fa-solid fa-arrow-down" aria-hidden="true"></i> <span data-field="rateDownload"></span></span>
+                                <span><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> <span data-field="rateUpload"></span></span>
                                 <span data-field="eta"></span>
                                 <span data-field="peers"></span>
                                 <span class="d-none d-sm-inline" data-field="addedDate"></span>
@@ -69,8 +76,8 @@
                     </div>
                     <div class="d-flex gap-2 mt-2">
                         <button type="button" class="btn btn-outline-secondary flex-fill torrent-toggle-btn" data-action="toggle"></button>
-                        <button type="button" class="btn btn-outline-secondary flex-fill torrent-info-btn" data-action="details">ℹ️ Details</button>
-                        <button type="button" class="btn btn-outline-danger flex-fill torrent-remove-btn" data-action="remove">🗑️ Remove</button>
+                        <button type="button" class="btn btn-outline-secondary flex-fill torrent-info-btn" data-action="details"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> <span>Details</span></button>
+                        <button type="button" class="btn btn-outline-danger flex-fill torrent-remove-btn" data-action="remove"><i class="fa-solid fa-trash" aria-hidden="true"></i> <span>Remove</span></button>
                     </div>
                 </div>
             </div>
@@ -98,14 +105,14 @@
                             <form id="add-torrent-uri-form">
                                 <label for="add-torrent-uri-input" class="form-label">Magnet link or torrent URL</label>
                                 <input type="text" class="form-control" id="add-torrent-uri-input" name="source" placeholder="magnet:?xt=urn:btih:... or https://example.com/file.torrent" autocomplete="off">
-                                <button type="submit" class="btn btn-primary w-100 mt-3">Add torrent</button>
+                                <button type="submit" class="btn btn-primary w-100 mt-3"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add torrent</button>
                             </form>
                         </div>
                         <div class="tab-pane fade" id="add-torrent-file-pane" role="tabpanel">
                             <form id="add-torrent-file-form">
                                 <label for="add-torrent-file-input" class="form-label">.torrent file</label>
                                 <input type="file" class="form-control" id="add-torrent-file-input" name="file" accept=".torrent">
-                                <button type="submit" class="btn btn-primary w-100 mt-3">Upload &amp; add</button>
+                                <button type="submit" class="btn btn-primary w-100 mt-3"><i class="fa-solid fa-upload" aria-hidden="true"></i> Upload &amp; add</button>
                             </form>
                         </div>
                     </div>
@@ -127,9 +134,9 @@
                     <div class="alert alert-danger d-none" id="remove-torrent-error"></div>
                 </div>
                 <div class="modal-footer flex-column flex-sm-row">
-                    <button type="button" class="btn btn-secondary w-100 w-sm-auto" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-warning w-100 w-sm-auto" id="remove-torrent-keep-data-btn">Remove torrent</button>
-                    <button type="button" class="btn btn-danger w-100 w-sm-auto" id="remove-torrent-delete-data-btn">Remove torrent and delete data</button>
+                    <button type="button" class="btn btn-secondary w-100 w-sm-auto" data-bs-dismiss="modal"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Cancel</button>
+                    <button type="button" class="btn btn-warning w-100 w-sm-auto" id="remove-torrent-keep-data-btn"><i class="fa-solid fa-trash" aria-hidden="true"></i> Remove torrent</button>
+                    <button type="button" class="btn btn-danger w-100 w-sm-auto" id="remove-torrent-delete-data-btn"><i class="fa-solid fa-trash" aria-hidden="true"></i> Remove torrent and delete data</button>
                 </div>
             </div>
         </div>
@@ -160,9 +167,9 @@
                                 <span class="input-group-text">KB/s</span>
                             </div>
                         </div>
-                        <p class="text-muted small mb-3">Turtle mode is currently <strong id="settings-turtle-state">unknown</strong>. Use the 🐢 button in the top bar to toggle it.</p>
+                        <p class="text-muted small mb-3">Turtle mode is currently <strong id="settings-turtle-state">unknown</strong>. Use the <i class="fa-solid fa-gauge-simple" aria-hidden="true"></i> button in the top bar to toggle it.</p>
                         <div class="alert alert-danger d-none" id="settings-error"></div>
-                        <button type="submit" class="btn btn-primary w-100">Save</button>
+                        <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save</button>
                     </form>
                 </div>
             </div>
@@ -179,8 +186,9 @@
                 <div class="modal-body">
                     <div class="alert alert-danger d-none" id="details-error"></div>
 
-                    <div class="progress mb-3" style="height: 10px;">
-                        <div class="progress-bar" id="details-progress-bar" role="progressbar"></div>
+                    <div class="progress seedlet-progress seedlet-progress-lg mb-3">
+                        <div class="progress-bar" id="details-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+                        <span class="progress-value" id="details-progress-label"></span>
                     </div>
 
                     <dl class="row small">
@@ -241,7 +249,7 @@
                                 </div>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary mt-3">Save settings</button>
+                        <button type="submit" class="btn btn-primary mt-3"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save settings</button>
                     </form>
 
                     <hr>
@@ -262,13 +270,15 @@
                                 <tbody id="details-files-body"></tbody>
                             </table>
                         </div>
-                        <button type="submit" class="btn btn-primary mt-2">Save file selection</button>
+                        <button type="submit" class="btn btn-primary mt-2"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save file selection</button>
                     </form>
 
                     <template id="details-file-row-template">
                         <tr>
                             <td><input type="checkbox" class="form-check-input file-wanted-input"></td>
-                            <td class="text-truncate file-name" style="max-width: 16rem;"></td>
+                            <td class="text-truncate" style="max-width: 16rem;">
+                                <i class="fa-regular fa-file text-body-secondary me-1" aria-hidden="true"></i><span class="file-name"></span>
+                            </td>
                             <td class="file-size text-nowrap"></td>
                             <td class="file-progress text-nowrap"></td>
                             <td>
