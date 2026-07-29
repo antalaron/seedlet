@@ -245,7 +245,7 @@ jobs:
 
       - name: Report to GitHub
         if: failure()
-        uses: jbzoo/ci-report-converter@2.10.0
+        uses: jbzoo/ci-report-converter@8.0.0
         with:
           input-format: junit
           input-file: report.xml
