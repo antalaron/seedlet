@@ -7,8 +7,6 @@
  * file that was distributed with this source code.
  */
 
-import '@openfonts/open-sans_latin-ext';
-import '@fortawesome/fontawesome-free/css/all.min.css';
 import '../styles/seedlet.scss';
 import Seedlet from './modules/seedlet.js';
 
