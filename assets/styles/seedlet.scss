@@ -1,3 +1,19 @@
-body {
-    background-color: lightgray;
+/*!
+ * This file is part of Seedlet project
+ *
+ * (c) Antal Áron <antalaron@antalaron.hu>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+@import 'bootstrap/scss/bootstrap';
+
+.min-width-0 {
+  min-width: 0;
 }
+
+.torrent-row .btn {
+  min-height: 2.5rem;
+}
+

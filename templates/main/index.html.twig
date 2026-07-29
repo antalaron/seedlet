@@ -1,5 +1,287 @@
 {% extends 'base.html.twig' %}
 
 {% block body %}
-    <h1>Hello</h1>
+    <div id="app" data-csrf-token="{{ csrf_token('api') }}">
+        <nav class="navbar navbar-dark bg-dark sticky-top shadow-sm">
+            <div class="container-fluid">
+                <span class="navbar-brand mb-0 h1">Seedlet</span>
+                <div class="d-flex gap-2">
+                    <button type="button" id="turtle-toggle-btn" class="btn btn-outline-light" aria-pressed="false" title="Turtle (alt-speed) mode" aria-label="Toggle turtle mode">
+                        🐢
+                    </button>
+                    <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#settings-modal" aria-label="Global speed settings">
+                        ⚙️
+                    </button>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-torrent-modal" aria-label="Add torrent">
+                        ＋ Add
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div id="error-banner" class="alert alert-danger rounded-0 mb-0 py-2 text-center d-none" role="alert"></div>
+
+        <main class="container-fluid py-3">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <label class="form-label mb-0" for="sort-field">Sort by</label>
+                <select id="sort-field" class="form-select form-select-sm w-auto">
+                    <option value="name">Name</option>
+                    <option value="status">Status</option>
+                    <option value="percentDone">Progress</option>
+                    <option value="totalSize">Size</option>
+                    <option value="rateDownload">Download speed</option>
+                    <option value="rateUpload">Upload speed</option>
+                    <option value="eta">ETA</option>
+                    <option value="addedDate">Added</option>
+                </select>
+                <button type="button" id="sort-direction-btn" class="btn btn-outline-secondary btn-sm" data-direction="asc" aria-label="Toggle sort direction">
+                    ↑ Ascending
+                </button>
+                <span class="ms-auto text-muted small" id="torrent-count"></span>
+            </div>
+
+            <div id="torrent-list" class="d-flex flex-column gap-2"></div>
+
+            <p id="empty-state" class="text-muted text-center py-5 d-none">No torrents yet. Tap "Add" to add one.</p>
+        </main>
+
+        <template id="torrent-row-template">
+            <div class="card torrent-row" data-id="">
+                <div class="card-body p-2 p-sm-3">
+                    <div class="d-flex align-items-start gap-2">
+                        <div class="flex-grow-1 min-width-0">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="fw-semibold text-truncate torrent-name" data-field="name"></span>
+                                <span class="badge torrent-status-badge" data-field="statusBadge"></span>
+                            </div>
+                            <div class="progress mt-2" style="height: 8px;">
+                                <div class="progress-bar torrent-progress-bar" data-field="progressBar" role="progressbar"></div>
+                            </div>
+                            <div class="d-flex flex-wrap column-gap-3 row-gap-1 mt-2 small text-muted">
+                                <span data-field="size"></span>
+                                <span>↓ <span data-field="rateDownload"></span></span>
+                                <span>↑ <span data-field="rateUpload"></span></span>
+                                <span data-field="eta"></span>
+                                <span data-field="peers"></span>
+                                <span class="d-none d-sm-inline" data-field="addedDate"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                        <button type="button" class="btn btn-outline-secondary flex-fill torrent-toggle-btn" data-action="toggle"></button>
+                        <button type="button" class="btn btn-outline-secondary flex-fill torrent-info-btn" data-action="details">ℹ️ Details</button>
+                        <button type="button" class="btn btn-outline-danger flex-fill torrent-remove-btn" data-action="remove">🗑️ Remove</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <div class="modal fade" id="add-torrent-modal" tabindex="-1" aria-labelledby="add-torrent-modal-label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="add-torrent-modal-label">Add torrent</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-pills mb-3" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#add-torrent-uri-pane" type="button" role="tab">Magnet / URL</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#add-torrent-file-pane" type="button" role="tab">Upload file</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="add-torrent-uri-pane" role="tabpanel">
+                            <form id="add-torrent-uri-form">
+                                <label for="add-torrent-uri-input" class="form-label">Magnet link or torrent URL</label>
+                                <input type="text" class="form-control" id="add-torrent-uri-input" name="source" placeholder="magnet:?xt=urn:btih:... or https://example.com/file.torrent" autocomplete="off">
+                                <button type="submit" class="btn btn-primary w-100 mt-3">Add torrent</button>
+                            </form>
+                        </div>
+                        <div class="tab-pane fade" id="add-torrent-file-pane" role="tabpanel">
+                            <form id="add-torrent-file-form">
+                                <label for="add-torrent-file-input" class="form-label">.torrent file</label>
+                                <input type="file" class="form-control" id="add-torrent-file-input" name="file" accept=".torrent">
+                                <button type="submit" class="btn btn-primary w-100 mt-3">Upload &amp; add</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="alert alert-danger mt-3 d-none" id="add-torrent-error"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="remove-torrent-modal" tabindex="-1" aria-labelledby="remove-torrent-modal-label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="remove-torrent-modal-label">Remove torrent</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Remove <strong id="remove-torrent-name"></strong>?</p>
+                    <div class="alert alert-danger d-none" id="remove-torrent-error"></div>
+                </div>
+                <div class="modal-footer flex-column flex-sm-row">
+                    <button type="button" class="btn btn-secondary w-100 w-sm-auto" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning w-100 w-sm-auto" id="remove-torrent-keep-data-btn">Remove torrent</button>
+                    <button type="button" class="btn btn-danger w-100 w-sm-auto" id="remove-torrent-delete-data-btn">Remove torrent and delete data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="settings-modal" tabindex="-1" aria-labelledby="settings-modal-label" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="settings-modal-label">Global speed limits</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="settings-form">
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="settings-download-enabled">
+                            <label class="form-check-label" for="settings-download-enabled">Limit download speed</label>
+                            <div class="input-group mt-1">
+                                <input type="number" min="0" class="form-control" id="settings-download-limit">
+                                <span class="input-group-text">KB/s</span>
+                            </div>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="settings-upload-enabled">
+                            <label class="form-check-label" for="settings-upload-enabled">Limit upload speed</label>
+                            <div class="input-group mt-1">
+                                <input type="number" min="0" class="form-control" id="settings-upload-limit">
+                                <span class="input-group-text">KB/s</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-3">Turtle mode is currently <strong id="settings-turtle-state">unknown</strong>. Use the 🐢 button in the top bar to toggle it.</p>
+                        <div class="alert alert-danger d-none" id="settings-error"></div>
+                        <button type="submit" class="btn btn-primary w-100">Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="torrent-details-modal" tabindex="-1" aria-labelledby="torrent-details-modal-label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5 text-truncate" id="torrent-details-modal-label">Torrent details</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger d-none" id="details-error"></div>
+
+                    <div class="progress mb-3" style="height: 10px;">
+                        <div class="progress-bar" id="details-progress-bar" role="progressbar"></div>
+                    </div>
+
+                    <dl class="row small">
+                        <dt class="col-6 col-sm-4">Status</dt><dd class="col-6 col-sm-8" id="details-status"></dd>
+                        <dt class="col-6 col-sm-4">Size</dt><dd class="col-6 col-sm-8" id="details-size"></dd>
+                        <dt class="col-6 col-sm-4">Downloaded</dt><dd class="col-6 col-sm-8" id="details-downloaded"></dd>
+                        <dt class="col-6 col-sm-4">Uploaded</dt><dd class="col-6 col-sm-8" id="details-uploaded"></dd>
+                        <dt class="col-6 col-sm-4">Ratio</dt><dd class="col-6 col-sm-8" id="details-ratio"></dd>
+                        <dt class="col-6 col-sm-4">Download speed</dt><dd class="col-6 col-sm-8" id="details-rate-download"></dd>
+                        <dt class="col-6 col-sm-4">Upload speed</dt><dd class="col-6 col-sm-8" id="details-rate-upload"></dd>
+                        <dt class="col-6 col-sm-4">ETA</dt><dd class="col-6 col-sm-8" id="details-eta"></dd>
+                        <dt class="col-6 col-sm-4">Peers / Seeds</dt><dd class="col-6 col-sm-8" id="details-peers"></dd>
+                        <dt class="col-6 col-sm-4">Added</dt><dd class="col-6 col-sm-8" id="details-added"></dd>
+                    </dl>
+
+                    <hr>
+
+                    <form id="details-settings-form">
+                        <h3 class="fs-6">Settings</h3>
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label" for="details-priority">Priority</label>
+                                <select class="form-select" id="details-priority">
+                                    <option value="1">High</option>
+                                    <option value="0">Normal</option>
+                                    <option value="-1">Low</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label" for="details-peer-limit">Peer limit</label>
+                                <input type="number" min="1" class="form-control" id="details-peer-limit">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="details-download-dir">Download directory</label>
+                                <input type="text" class="form-control" id="details-download-dir" autocomplete="off">
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label" for="details-seed-ratio-mode">Seed ratio limit</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="details-seed-ratio-mode" style="max-width: 8.5rem;">
+                                        <option value="0">Global</option>
+                                        <option value="1">Custom</option>
+                                        <option value="2">Unlimited</option>
+                                    </select>
+                                    <input type="number" min="0" step="0.1" class="form-control" id="details-seed-ratio-limit">
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label" for="details-seed-idle-mode">Seed idle limit</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="details-seed-idle-mode" style="max-width: 8.5rem;">
+                                        <option value="0">Global</option>
+                                        <option value="1">Custom</option>
+                                        <option value="2">Unlimited</option>
+                                    </select>
+                                    <input type="number" min="0" class="form-control" id="details-seed-idle-limit">
+                                    <span class="input-group-text">min</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">Save settings</button>
+                    </form>
+
+                    <hr>
+
+                    <h3 class="fs-6">Files</h3>
+                    <form id="details-files-form">
+                        <div class="table-responsive" style="max-height: 40vh; overflow-y: auto;">
+                            <table class="table table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th scope="col"></th>
+                                        <th scope="col">Name</th>
+                                        <th scope="col">Size</th>
+                                        <th scope="col">Progress</th>
+                                        <th scope="col">Priority</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="details-files-body"></tbody>
+                            </table>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-2">Save file selection</button>
+                    </form>
+
+                    <template id="details-file-row-template">
+                        <tr>
+                            <td><input type="checkbox" class="form-check-input file-wanted-input"></td>
+                            <td class="text-truncate file-name" style="max-width: 16rem;"></td>
+                            <td class="file-size text-nowrap"></td>
+                            <td class="file-progress text-nowrap"></td>
+                            <td>
+                                <select class="form-select form-select-sm file-priority-input">
+                                    <option value="1">High</option>
+                                    <option value="0">Normal</option>
+                                    <option value="-1">Low</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
