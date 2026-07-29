@@ -12,6 +12,9 @@
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
 return App::config([
+    'monolog' => [
+        'channels' => ['deprecation'],
+    ],
     'when@dev' => [
         'monolog' => [
             'handlers' => [
