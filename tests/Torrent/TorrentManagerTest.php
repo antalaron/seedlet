@@ -70,7 +70,7 @@ final class TorrentManagerTest extends TestCase
         $client = $this->createMock(TransmissionClientInterface::class);
         $client->expects($this->once())
             ->method('request')
-            ->with('torrent-add', ['filename' => 'magnet:?xt=urn:btih:abc'])
+            ->with('torrent-add', ['filename' => 'magnet:?xt=urn:btih:abc', 'paused' => false])
             ->willReturn(['torrent-added' => ['id' => 7, 'name' => 'added-torrent']])
         ;
 
@@ -85,7 +85,7 @@ final class TorrentManagerTest extends TestCase
         $client = $this->createMock(TransmissionClientInterface::class);
         $client->expects($this->once())
             ->method('request')
-            ->with('torrent-add', ['filename' => 'https://example.com/file.torrent'])
+            ->with('torrent-add', ['filename' => 'https://example.com/file.torrent', 'paused' => false])
             ->willReturn(['torrent-added' => ['id' => 8, 'name' => 'from-url']])
         ;
 
@@ -100,13 +100,56 @@ final class TorrentManagerTest extends TestCase
         $client = $this->createMock(TransmissionClientInterface::class);
         $client->expects($this->once())
             ->method('request')
-            ->with('torrent-add', ['metainfo' => base64_encode($content)])
+            ->with('torrent-add', ['metainfo' => base64_encode($content), 'paused' => false])
             ->willReturn(['torrent-added' => ['id' => 9, 'name' => 'from-file']])
         ;
 
         $added = (new TorrentManager($client))->addTorrent(AddTorrentRequest::fromTorrentFileContent($content));
 
         $this->assertSame(9, $added->id);
+    }
+
+    public function testAddTorrentFromMagnetCanStartPaused(): void
+    {
+        $client = $this->createMock(TransmissionClientInterface::class);
+        $client->expects($this->once())
+            ->method('request')
+            ->with('torrent-add', ['filename' => 'magnet:?xt=urn:btih:abc', 'paused' => true])
+            ->willReturn(['torrent-added' => ['id' => 10, 'name' => 'added-torrent']])
+        ;
+
+        $added = (new TorrentManager($client))->addTorrent(AddTorrentRequest::fromUri('magnet:?xt=urn:btih:abc', true));
+
+        $this->assertSame(10, $added->id);
+    }
+
+    public function testAddTorrentFromUrlCanStartPaused(): void
+    {
+        $client = $this->createMock(TransmissionClientInterface::class);
+        $client->expects($this->once())
+            ->method('request')
+            ->with('torrent-add', ['filename' => 'https://example.com/file.torrent', 'paused' => true])
+            ->willReturn(['torrent-added' => ['id' => 11, 'name' => 'from-url']])
+        ;
+
+        $added = (new TorrentManager($client))->addTorrent(AddTorrentRequest::fromUri('https://example.com/file.torrent', true));
+
+        $this->assertSame(11, $added->id);
+    }
+
+    public function testAddTorrentFromFileCanStartPaused(): void
+    {
+        $content = 'd8:announce...e';
+        $client = $this->createMock(TransmissionClientInterface::class);
+        $client->expects($this->once())
+            ->method('request')
+            ->with('torrent-add', ['metainfo' => base64_encode($content), 'paused' => true])
+            ->willReturn(['torrent-added' => ['id' => 12, 'name' => 'from-file']])
+        ;
+
+        $added = (new TorrentManager($client))->addTorrent(AddTorrentRequest::fromTorrentFileContent($content, true));
+
+        $this->assertSame(12, $added->id);
     }
 
     public function testAddTorrentReportsDuplicate(): void

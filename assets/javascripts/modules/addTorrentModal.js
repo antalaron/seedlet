@@ -39,9 +39,10 @@ class AddTorrentModal {
     event.preventDefault();
 
     const input = this.uriForm.querySelector('#add-torrent-uri-input');
+    const startPaused = this.isStartPaused(this.uriForm);
 
     try {
-      await this.api.addTorrentFromUri(input.value);
+      await this.api.addTorrentFromUri(input.value, startPaused);
       this.modal.hide();
       this.onAdded();
     } catch (error) {
@@ -54,6 +55,7 @@ class AddTorrentModal {
 
     const input = this.fileForm.querySelector('#add-torrent-file-input');
     const file = input.files[0];
+    const startPaused = this.isStartPaused(this.fileForm);
 
     if (!file) {
       this.showError('Please choose a .torrent file.');
@@ -62,12 +64,18 @@ class AddTorrentModal {
     }
 
     try {
-      await this.api.addTorrentFromFile(file);
+      await this.api.addTorrentFromFile(file, startPaused);
       this.modal.hide();
       this.onAdded();
     } catch (error) {
       this.showError(error.message);
     }
+  }
+
+  isStartPaused (form) {
+    const checked = form.querySelector('input[type="radio"][name$="-start-mode"]:checked');
+
+    return checked ? checked.value === 'paused' : false;
   }
 }
 

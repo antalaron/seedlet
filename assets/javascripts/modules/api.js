@@ -29,16 +29,17 @@ class Api {
     return this.request(`/api/torrents/${id}`);
   }
 
-  addTorrentFromUri (source) {
+  addTorrentFromUri (source, startPaused = false) {
     return this.request('/api/torrents', {
       method: 'POST',
-      json: { source }
+      json: { source, startPaused }
     });
   }
 
-  addTorrentFromFile (file) {
+  addTorrentFromFile (file, startPaused = false) {
     const body = new FormData();
     body.append('file', file);
+    body.append('startPaused', startPaused ? 'true' : 'false');
 
     return this.request('/api/torrents', { method: 'POST', body });
   }

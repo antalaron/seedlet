@@ -26,10 +26,11 @@ final readonly class AddTorrentRequest
     private function __construct(
         public ?string $uri,
         public ?string $metainfoBase64,
+        public bool $startPaused,
     ) {
     }
 
-    public static function fromUri(string $uri): self
+    public static function fromUri(string $uri, bool $startPaused = false): self
     {
         $uri = trim($uri);
 
@@ -38,7 +39,7 @@ final readonly class AddTorrentRequest
         }
 
         if (str_starts_with($uri, 'magnet:?')) {
-            return new self($uri, null);
+            return new self($uri, null, $startPaused);
         }
 
         $scheme = strtolower((string) parse_url($uri, \PHP_URL_SCHEME));
@@ -47,10 +48,10 @@ final readonly class AddTorrentRequest
             throw new InvalidTorrentRequestException('Only magnet links and http(s) torrent URLs are supported.');
         }
 
-        return new self($uri, null);
+        return new self($uri, null, $startPaused);
     }
 
-    public static function fromTorrentFileContent(string $content): self
+    public static function fromTorrentFileContent(string $content, bool $startPaused = false): self
     {
         if ('' === $content) {
             throw new InvalidTorrentRequestException('The uploaded torrent file is empty.');
@@ -64,6 +65,6 @@ final readonly class AddTorrentRequest
             throw new InvalidTorrentRequestException('The uploaded file is not a valid torrent file.');
         }
 
-        return new self(null, base64_encode($content));
+        return new self(null, base64_encode($content), $startPaused);
     }
 }

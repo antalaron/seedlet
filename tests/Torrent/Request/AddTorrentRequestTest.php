@@ -26,6 +26,7 @@ final class AddTorrentRequestTest extends TestCase
 
         $this->assertSame('magnet:?xt=urn:btih:abc123', $request->uri);
         $this->assertNull($request->metainfoBase64);
+        $this->assertFalse($request->startPaused);
     }
 
     public function testFromUriAcceptsHttpUrl(): void
@@ -33,6 +34,20 @@ final class AddTorrentRequestTest extends TestCase
         $request = AddTorrentRequest::fromUri('https://example.com/file.torrent');
 
         $this->assertSame('https://example.com/file.torrent', $request->uri);
+    }
+
+    public function testFromUriDefaultsToStartingImmediately(): void
+    {
+        $request = AddTorrentRequest::fromUri('magnet:?xt=urn:btih:abc123');
+
+        $this->assertFalse($request->startPaused);
+    }
+
+    public function testFromUriCanRequestStartingPaused(): void
+    {
+        $request = AddTorrentRequest::fromUri('magnet:?xt=urn:btih:abc123', true);
+
+        $this->assertTrue($request->startPaused);
     }
 
     public function testFromUriRejectsEmptyValue(): void
@@ -62,6 +77,14 @@ final class AddTorrentRequestTest extends TestCase
 
         $this->assertSame(base64_encode('d8:announce...e'), $request->metainfoBase64);
         $this->assertNull($request->uri);
+        $this->assertFalse($request->startPaused);
+    }
+
+    public function testFromTorrentFileContentCanRequestStartingPaused(): void
+    {
+        $request = AddTorrentRequest::fromTorrentFileContent('d8:announce...e', true);
+
+        $this->assertTrue($request->startPaused);
     }
 
     public function testFromTorrentFileContentRejectsEmptyContent(): void

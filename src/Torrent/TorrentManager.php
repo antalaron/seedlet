@@ -84,6 +84,11 @@ final readonly class TorrentManager
             ? ['metainfo' => $request->metainfoBase64]
             : ['filename' => $request->uri];
 
+        // Ask Transmission to create the torrent directly in the requested
+        // initial state, rather than adding it and issuing a separate
+        // torrent-stop call afterwards.
+        $arguments['paused'] = $request->startPaused;
+
         $result = $this->client->request('torrent-add', $arguments);
 
         $duplicate = isset($result['torrent-duplicate']);

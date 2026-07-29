@@ -239,6 +239,17 @@ body {
   box-shadow: 0 0 0 0.2rem rgba($seedlet-teal, 0.15);
 }
 
+// Start immediately / Add paused segmented control in the add-torrent
+// form. Built on Bootstrap's btn-check pattern; the extra height keeps
+// both options comfortable touch targets on mobile.
+.seedlet-start-mode-group .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+}
+
 .modal-header {
   background-color: $light;
   border-top-left-radius: $border-radius-lg;

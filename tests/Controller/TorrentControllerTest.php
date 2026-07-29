@@ -19,6 +19,7 @@ use Antalaron\Seedlet\Torrent\TorrentManager;
 use Antalaron\Seedlet\Transmission\TransmissionClientInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Container;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -64,7 +65,7 @@ final class TorrentControllerTest extends TestCase
         $client = $this->createMock(TransmissionClientInterface::class);
         $client->expects($this->once())
             ->method('request')
-            ->with('torrent-add', ['filename' => 'magnet:?xt=urn:btih:abc'])
+            ->with('torrent-add', ['filename' => 'magnet:?xt=urn:btih:abc', 'paused' => false])
             ->willReturn(['torrent-added' => ['id' => 3, 'name' => 'added']])
         ;
 
@@ -74,6 +75,67 @@ final class TorrentControllerTest extends TestCase
 
         $this->assertSame(201, $response->getStatusCode());
         $this->assertSame(3, $this->decode($response)['torrent']['id']);
+    }
+
+    public function testAddFromUriPayloadCanStartPaused(): void
+    {
+        $client = $this->createMock(TransmissionClientInterface::class);
+        $client->expects($this->once())
+            ->method('request')
+            ->with('torrent-add', ['filename' => 'magnet:?xt=urn:btih:abc', 'paused' => true])
+            ->willReturn(['torrent-added' => ['id' => 4, 'name' => 'added']])
+        ;
+
+        $request = Request::create('/api/torrents', 'POST', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode(['source' => 'magnet:?xt=urn:btih:abc', 'startPaused' => true]));
+
+        $response = $this->controller($client)->add($request);
+
+        $this->assertSame(4, $this->decode($response)['torrent']['id']);
+    }
+
+    public function testAddFromFileUploadDefaultsToStartingImmediately(): void
+    {
+        $client = $this->createMock(TransmissionClientInterface::class);
+        $client->expects($this->once())
+            ->method('request')
+            ->with('torrent-add', ['metainfo' => base64_encode('d8:announce...e'), 'paused' => false])
+            ->willReturn(['torrent-added' => ['id' => 5, 'name' => 'from-file']])
+        ;
+
+        $path = tempnam(sys_get_temp_dir(), 'seedlet-test-');
+        file_put_contents($path, 'd8:announce...e');
+        $file = new UploadedFile($path, 'test.torrent', test: true);
+
+        $request = Request::create('/api/torrents', 'POST', files: ['file' => $file]);
+
+        $response = $this->controller($client)->add($request);
+
+        $this->assertSame(201, $response->getStatusCode());
+        $this->assertSame(5, $this->decode($response)['torrent']['id']);
+
+        unlink($path);
+    }
+
+    public function testAddFromFileUploadCanStartPaused(): void
+    {
+        $client = $this->createMock(TransmissionClientInterface::class);
+        $client->expects($this->once())
+            ->method('request')
+            ->with('torrent-add', ['metainfo' => base64_encode('d8:announce...e'), 'paused' => true])
+            ->willReturn(['torrent-added' => ['id' => 6, 'name' => 'from-file']])
+        ;
+
+        $path = tempnam(sys_get_temp_dir(), 'seedlet-test-');
+        file_put_contents($path, 'd8:announce...e');
+        $file = new UploadedFile($path, 'test.torrent', test: true);
+
+        $request = Request::create('/api/torrents', 'POST', parameters: ['startPaused' => 'true'], files: ['file' => $file]);
+
+        $response = $this->controller($client)->add($request);
+
+        $this->assertSame(6, $this->decode($response)['torrent']['id']);
+
+        unlink($path);
     }
 
     public function testAddRejectsInvalidSource(): void

@@ -48,10 +48,12 @@ final class TorrentController extends AbstractController
 
         if (null !== $uploadedFile) {
             $content = file_get_contents($uploadedFile->getPathname());
-            $addRequest = AddTorrentRequest::fromTorrentFileContent(false !== $content ? $content : '');
+            $startPaused = $this->parseBoolean($request->request->get('startPaused'));
+            $addRequest = AddTorrentRequest::fromTorrentFileContent(false !== $content ? $content : '', $startPaused);
         } else {
             $payload = $this->decodePayload($request);
-            $addRequest = AddTorrentRequest::fromUri((string) ($payload['source'] ?? ''));
+            $startPaused = $this->parseBoolean($payload['startPaused'] ?? false);
+            $addRequest = AddTorrentRequest::fromUri((string) ($payload['source'] ?? ''), $startPaused);
         }
 
         $added = $this->torrentManager->addTorrent($addRequest);
@@ -117,5 +119,19 @@ final class TorrentController extends AbstractController
     private function decodePayload(Request $request): array
     {
         return '' === $request->getContent() ? [] : $request->toArray();
+    }
+
+    /**
+     * Accepts native booleans (from decoded JSON payloads) as well as the
+     * string values sent by multipart/form-data requests (file uploads),
+     * where every field arrives as a string.
+     */
+    private function parseBoolean(mixed $value): bool
+    {
+        if (\is_bool($value)) {
+            return $value;
+        }
+
+        return \in_array($value, ['1', 'true', 'on', 'yes'], true);
     }
 }

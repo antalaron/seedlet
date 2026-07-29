@@ -105,6 +105,22 @@
                             <form id="add-torrent-uri-form">
                                 <label for="add-torrent-uri-input" class="form-label">Magnet link or torrent URL</label>
                                 <input type="text" class="form-control" id="add-torrent-uri-input" name="source" placeholder="magnet:?xt=urn:btih:... or https://example.com/file.torrent" autocomplete="off">
+
+                                <div class="mt-3">
+                                    <span class="form-label d-block mb-1">Initial state</span>
+                                    <div class="btn-group w-100 seedlet-start-mode-group" role="group" aria-label="Start the torrent immediately or add it paused">
+                                        <input type="radio" class="btn-check" name="add-torrent-uri-start-mode" id="add-torrent-uri-start-mode-start" value="start" autocomplete="off" checked>
+                                        <label class="btn btn-outline-secondary" for="add-torrent-uri-start-mode-start">
+                                            <i class="fa-solid fa-play" aria-hidden="true"></i> Start immediately
+                                        </label>
+
+                                        <input type="radio" class="btn-check" name="add-torrent-uri-start-mode" id="add-torrent-uri-start-mode-paused" value="paused" autocomplete="off">
+                                        <label class="btn btn-outline-secondary" for="add-torrent-uri-start-mode-paused">
+                                            <i class="fa-solid fa-pause" aria-hidden="true"></i> Add paused
+                                        </label>
+                                    </div>
+                                </div>
+
                                 <button type="submit" class="btn btn-primary w-100 mt-3"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add torrent</button>
                             </form>
                         </div>
@@ -112,6 +128,22 @@
                             <form id="add-torrent-file-form">
                                 <label for="add-torrent-file-input" class="form-label">.torrent file</label>
                                 <input type="file" class="form-control" id="add-torrent-file-input" name="file" accept=".torrent">
+
+                                <div class="mt-3">
+                                    <span class="form-label d-block mb-1">Initial state</span>
+                                    <div class="btn-group w-100 seedlet-start-mode-group" role="group" aria-label="Start the torrent immediately or add it paused">
+                                        <input type="radio" class="btn-check" name="add-torrent-file-start-mode" id="add-torrent-file-start-mode-start" value="start" autocomplete="off" checked>
+                                        <label class="btn btn-outline-secondary" for="add-torrent-file-start-mode-start">
+                                            <i class="fa-solid fa-play" aria-hidden="true"></i> Start immediately
+                                        </label>
+
+                                        <input type="radio" class="btn-check" name="add-torrent-file-start-mode" id="add-torrent-file-start-mode-paused" value="paused" autocomplete="off">
+                                        <label class="btn btn-outline-secondary" for="add-torrent-file-start-mode-paused">
+                                            <i class="fa-solid fa-pause" aria-hidden="true"></i> Add paused
+                                        </label>
+                                    </div>
+                                </div>
+
                                 <button type="submit" class="btn btn-primary w-100 mt-3"><i class="fa-solid fa-upload" aria-hidden="true"></i> Upload &amp; add</button>
                             </form>
                         </div>
