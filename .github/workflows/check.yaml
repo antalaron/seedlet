@@ -1,0 +1,252 @@
+name: Check repository formatting and coding standards
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'  # Every Monday at 03:00
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  code-quality:
+    name: Check code quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          path: o
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+
+      - name: Prepare code
+        env:
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          # Install dependencies and select files to check
+          pip install codespell &
+          composer global require -q friendsofphp/php-cs-fixer
+
+          mkdir a
+          [ -e o/.php-cs-fixer.dist.php ] && cp -a {o,a}/.php-cs-fixer.dist.php
+          [ -e o/.codespellrc ] && cp -a {o,a}/.codespellrc
+
+          gh api --paginate "/repos/$REPO/pulls/$PR/files" \
+            | jq -rc '.[] | select(.status != "removed") | .filename' \
+            | while read -r FILENAME; do
+              mkdir -p "a/$(dirname "$FILENAME")"
+              cp -a {o,a}/"$FILENAME"
+            done
+
+      - name: Check PHP code style
+        if: always()
+        run: |
+          # Run PHP-CS-Fixer
+          cp -a a b && cd b
+          ~/.composer/vendor/bin/php-cs-fixer fix --using-cache no --show-progress none
+          cd ..
+
+          if ! diff -qr --no-dereference a/ b/ >/dev/null; then
+            echo "::error::PHP-CS-Fixer found style issues. Please apply the patch below."
+            echo -e "\n \n git apply - <<'EOF_PATCH'"
+            diff -pru2 --no-dereference --color=always a/ b/ || true
+            echo -e "EOF_PATCH\n \n"
+            echo "Then commit the changes and push to your PR branch."
+            exit 1
+          fi
+
+      - name: Check for common typos
+        if: always()
+        run: |
+          # Run codespell
+          rm -rf b && cp -a a b && cd b
+          codespell -L invokable --check-filenames -w --skip='composer.lock,pnpm-lock.yaml,*.xlf,*/Symfony/Component/Intl/Resources/data/*' || true
+          cd ..
+
+          if ! diff -qr --no-dereference a/ b/ >/dev/null; then
+            echo "::error::Codespell found typos. Please apply the patch below."
+            echo -e "\n \n git apply - <<'EOF_PATCH'"
+            diff -pru2 --no-dereference --color=always a/ b/ || true
+            echo -e "EOF_PATCH\n \n"
+            echo "Then commit the changes and push to your PR branch."
+            exit 1
+          fi
+
+      - name: Check for merge commits
+        if: always()
+        env:
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          # If a PR contains merge commits, fail the job
+          gh api -H "Accept: application/vnd.github.v3+json" \
+            "/repos/$REPO/pulls/$PR/commits" \
+            | jq -r '.[].parents | length > 1' | grep true > /dev/null && {
+              echo "::error::Merge commits are not allowed in pull requests."
+              echo "Please rebase your branch."
+              exit 1
+            } || true
+
+      - name: Check commit attribution
+        if: always()
+        env:
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          # Commits must be linked to a GitHub account
+          gh api --paginate "/repos/$REPO/pulls/$PR/commits" \
+            | jq -r '.[] | select(.author.login == null and (.commit.author.email | test("@users\\.noreply\\.github\\.com$") | not)) | "::error::Commit \(.sha[0:7]) uses email \(.commit.author.email), which is not linked to a GitHub account."' \
+            | grep "::error::" && {
+              echo "Please configure your git email to match your GitHub account."
+              exit 1
+            } || true
+
+      - name: Check YAML files
+        if: always()
+        run: |
+          # Check YAML files for syntax errors
+          rm -rf b && cp -a a b && cd b
+          find . -name '*.yml' -o -name '*.yaml' \
+            | while read -r FILE; do php -r '
+              use Symfony\Component\Yaml\{Parser,Yaml};
+              require $_SERVER["HOME"]."/.composer/vendor/autoload.php";
+              try { (new Parser())->parse(file_get_contents($argv[1]), Yaml::PARSE_CUSTOM_TAGS); }
+              catch (Exception $e) { echo "::error::in $argv[1]:\n{$e->getMessage()}\n"; exit(1); }
+            ' "$FILE"
+            done
+          cd ..
+
+      - name: Check JSON files
+        if: always()
+        run: |
+          # Check JSON files for syntax errors
+          rm -rf b && cp -a a b && cd b
+          find . -name '*.json' \
+            | while read -r FILE; do php -r '
+              use Seld\JsonLint\JsonParser;
+              require $_SERVER["HOME"]."/.composer/vendor/autoload.php";
+              try { (new JsonParser())->parse(file_get_contents($argv[1])); }
+              catch (Exception $e) { echo "::error:: in $argv[1]: {$e->getMessage()}\n"; exit(1); }
+              ' "$FILE"
+            done
+          cd ..
+
+      - name: Check file permissions
+        if: always()
+        run: |
+          # Check for executable files without a shebang or that are not recognized as executables
+          cd a
+          find -type f -perm /u+x,g+x,o+x | while read -r FILE_PATH; do
+            if head -n 1 "$FILE_PATH" 2>/dev/null | grep -q '^#!'; then
+              continue
+            fi
+            if file -b "$FILE_PATH" 2>/dev/null | grep -qi 'elf'; then
+              continue
+            fi
+            echo "$FILE_PATH" >> ../PROBLEM_FILES
+          done
+          cd ..
+
+          if [ -e PROBLEM_FILES ]; then
+            echo "::error::Found executable files without a shebang or that are not recognized as executables:"
+            echo -e "\n \n$(cat PROBLEM_FILES)\n \n"
+            echo "Remove executable permissions: 'chmod -x <file>' for each listed file."
+            rm PROBLEM_FILES
+            exit 1
+          fi
+
+      - name: 🧠 Check can generate false-positives. Cherry-pick as fits 🍒.
+        if: always()
+        run: exit 0
+
+  js-cs-test:
+    name: Check JavaScript coding standard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install semistandard globally
+        run: |
+          yarn global add semistandard
+
+      - name: Run JavaScript code style check
+        run: |
+          # Run semistandard
+          "$(yarn global bin)/semistandard" --verbose
+
+  test:
+    name: Test project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, mbstring
+
+      - name: Setup Node.js v22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Get yarn cache directory
+        id: yarn-cache
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache yarn dependencies
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.yarn-cache.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-
+
+      - name: Test project
+        run: |
+          make test-ci
+        env:
+          APP_ENV: test
+
+      - name: Report to GitHub
+        if: failure()
+        uses: jbzoo/ci-report-converter@2.10.0
+        with:
+          input-format: junit
+          input-file: report.xml
+          suite-name: Seedlet Test Suite
