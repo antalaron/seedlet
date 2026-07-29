@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
 
-# $rootDirectory = dirname(__DIR__);
-# $timeFile = $rootDirectory.'/var/.assets-mtime';
-# $watchFiles = [
-#     '/assets',
-#     '/webpack.config.js',
-# ];
+set -e
 
 root_directory=$(dirname $(dirname $0))
 time_file=$root_directory/var/.assets-mtime
