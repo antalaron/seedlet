@@ -1,5 +1,7 @@
 # Seedlet
 
+[![Check & Test](https://github.com/antalaron/seedlet/actions/workflows/check.yaml/badge.svg)](https://github.com/antalaron/seedlet/actions/workflows/check.yaml?query=branch:master+event:schedule)
+
 Seedlet is a web frontend for the [Transmission](https://transmissionbt.com/) BitTorrent
 client. It talks to a running Transmission daemon over its RPC API and lets you add, list,
 inspect and control torrents (pause/resume, file selection, remove, speed/session settings)

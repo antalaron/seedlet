@@ -1,4 +1,4 @@
-name: Check repository formatting and coding standards
+name: Check & Test
 
 on:
   push:
