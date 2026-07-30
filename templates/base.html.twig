@@ -14,5 +14,17 @@
 
 <body class="bg-body-tertiary">
     {% block body %}{% endblock %}
+
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container text-center small">
+            <span class="text-muted">
+                Seedlet &copy; 2026{% if 'now'|date('Y') > 2026 %}-{{ 'now'|date('y') }}{% endif %}, Antal Áron |
+                Made with <i class="fa-solid fa-heart"></i> |
+                Open source on <a href="https://github.com/antalaron/seedlet" target="_blank" rel="noopener noreferrer">
+                    GitHub
+                </a>
+            </span>
+        </div>
+    </footer>
 </body>
 </html>
