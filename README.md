@@ -1,6 +1,12 @@
-# Seedlet
+<p align="center">
+    <img src="assets/images/logo-medium.png" width="256">
+</p>
+<p align="center">
+    <a href="https://github.com/antalaron/seedlet/actions/workflows/check.yaml?query=branch:master+event:schedule"><img src="https://github.com/antalaron/seedlet/actions/workflows/check.yaml/badge.svg"></a>
+    <a href="https://codecov.io/github/antalaron/seedlet"><img src="https://codecov.io/github/antalaron/seedlet/graph/badge.svg?token=WJFTH6ED6I"></a>
+</p>
 
-[![Check & Test](https://github.com/antalaron/seedlet/actions/workflows/check.yaml/badge.svg)](https://github.com/antalaron/seedlet/actions/workflows/check.yaml?query=branch:master+event:schedule)
+# Seedlet
 
 Seedlet is a web frontend for the [Transmission](https://transmissionbt.com/) BitTorrent
 client. It talks to a running Transmission daemon over its RPC API and lets you add, list,

@@ -105,7 +105,7 @@ tf: deps cc-test
 
 test-ci:        ## Run the PHP tests in one
 test-ci: deps cc-test
-	if [ "${GITHUB_ACTIONS}" = "true" ]; then $(PHPUNIT) --log-junit report.xml; else $(PHPUNIT); fi
+	if [ "${GITHUB_ACTIONS}" = "true" ]; then $(PHPUNIT) --log-junit report.xml --coverage-clover=coverage.xml; else $(PHPUNIT); fi
 
 
 

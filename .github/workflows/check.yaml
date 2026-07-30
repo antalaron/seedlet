@@ -243,6 +243,15 @@ jobs:
         env:
           APP_ENV: test
 
+      - name: Run codecov
+        uses: codecov/codecov-action@v7
+        if: success() && github.event_name != 'pull_request'
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: './coverage.xml'
+          fail_ci_if_error: false
+
       - name: Report to GitHub
         if: failure()
         uses: jbzoo/ci-report-converter@2.10.0
