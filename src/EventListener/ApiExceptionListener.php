@@ -16,12 +16,11 @@ use Antalaron\Seedlet\Torrent\Exception\TorrentNotFoundException;
 use Antalaron\Seedlet\Transmission\Exception\TransmissionRpcException;
 use Antalaron\Seedlet\Transmission\Exception\TransmissionUnavailableException;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpKernel\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
-use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
  * Converts exceptions raised while handling "/api/" requests into a JSON
@@ -29,7 +28,7 @@ use Symfony\Component\HttpKernel\KernelEvents;
  *
  * @author Antal Áron <antalaron@antalaron.hu>
  */
-#[AsEventListener(event: KernelEvents::EXCEPTION)]
+#[AsEventListener]
 final readonly class ApiExceptionListener
 {
     public function __construct(

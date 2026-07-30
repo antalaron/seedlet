@@ -11,10 +11,9 @@
 
 namespace Antalaron\Seedlet\EventListener;
 
-use Symfony\Component\HttpKernel\Attribute\AsEventListener;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
@@ -26,7 +25,7 @@ use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
  *
  * @author Antal Áron <antalaron@antalaron.hu>
  */
-#[AsEventListener(event: KernelEvents::REQUEST)]
+#[AsEventListener]
 final readonly class CsrfProtectionListener
 {
     private const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
