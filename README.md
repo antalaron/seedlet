@@ -5,6 +5,8 @@ client. It talks to a running Transmission daemon over its RPC API and lets you 
 inspect and control torrents (pause/resume, file selection, remove, speed/session settings)
 from a browser.
 
+![Screenshot](docs/images/screenshot.png)
+
 ## Technologies
 
 - Backend: PHP 8.4, [Symfony](https://symfony.com/) 8.1, Twig
