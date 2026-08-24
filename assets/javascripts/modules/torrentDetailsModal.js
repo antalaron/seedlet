@@ -36,13 +36,41 @@ class TorrentDetailsModal {
     this.seedIdleModeInput = element.querySelector('#details-seed-idle-mode');
     this.seedIdleLimitInput = element.querySelector('#details-seed-idle-limit');
 
+    // Maps a settings field name to the input holding it and how to read its
+    // value back out of a rendered torrent, so both render() and the save
+    // handler can share a single source of truth.
+    this.settingsFields = {
+      priority: { input: this.priorityInput, read: (torrent) => String(torrent.bandwidthPriority) },
+      peerLimit: { input: this.peerLimitInput, read: (torrent) => torrent.peerLimit },
+      downloadDir: { input: this.downloadDirInput, read: (torrent) => torrent.downloadDir },
+      seedRatioMode: { input: this.seedRatioModeInput, read: (torrent) => String(torrent.seedRatioMode) },
+      seedRatioLimit: { input: this.seedRatioLimitInput, read: (torrent) => torrent.seedRatioLimit },
+      seedIdleMode: { input: this.seedIdleModeInput, read: (torrent) => String(torrent.seedIdleMode) },
+      seedIdleLimit: { input: this.seedIdleLimitInput, read: (torrent) => torrent.seedIdleLimit }
+    };
+    // Fields the user has started editing since the last render/save: these
+    // are skipped by render() so live polling can't clobber in-progress edits.
+    this.dirtySettingsFields = new Set();
+
     this.filesForm = element.querySelector('#details-files-form');
     this.filesBody = element.querySelector('#details-files-body');
+    // Per-file-index edits (wanted/priority) the user has started making
+    // since the last render/save, keyed by file index. File rows are fully
+    // rebuilt on every render, so unlike settings inputs the edited value
+    // itself (not just a flag) needs to be kept around to re-apply it.
+    this.dirtyFiles = new Map();
   }
 
   init () {
     this.settingsForm.addEventListener('submit', (event) => this.handleSettingsSubmit(event));
     this.filesForm.addEventListener('submit', (event) => this.handleFilesSubmit(event));
+
+    for (const [field, { input }] of Object.entries(this.settingsFields)) {
+      input.addEventListener('input', () => this.dirtySettingsFields.add(field));
+      input.addEventListener('change', () => this.dirtySettingsFields.add(field));
+    }
+
+    this.filesBody.addEventListener('change', (event) => this.handleFileFieldChange(event));
 
     // Track whether the modal is actually visible, so the shared torrent
     // list polling loop knows when it can stop refreshing this modal's data
@@ -68,6 +96,8 @@ class TorrentDetailsModal {
   async open (id) {
     this.id = id;
     this.showError(null);
+    this.dirtySettingsFields.clear();
+    this.dirtyFiles.clear();
 
     try {
       const { torrent } = await this.api.getTorrent(id);
@@ -127,13 +157,11 @@ class TorrentDetailsModal {
     this.element.querySelector('#details-peers').textContent = `${torrent.seeders} seeders, ${torrent.leechers} leechers`;
     this.element.querySelector('#details-added').textContent = formatDate(torrent.addedDate);
 
-    this.priorityInput.value = String(torrent.bandwidthPriority);
-    this.peerLimitInput.value = torrent.peerLimit;
-    this.downloadDirInput.value = torrent.downloadDir;
-    this.seedRatioModeInput.value = String(torrent.seedRatioMode);
-    this.seedRatioLimitInput.value = torrent.seedRatioLimit;
-    this.seedIdleModeInput.value = String(torrent.seedIdleMode);
-    this.seedIdleLimitInput.value = torrent.seedIdleLimit;
+    for (const [field, { input, read }] of Object.entries(this.settingsFields)) {
+      if (!this.dirtySettingsFields.has(field)) {
+        input.value = read(torrent);
+      }
+    }
 
     this.renderFiles(torrent.files);
   }
@@ -145,17 +173,45 @@ class TorrentDetailsModal {
     const template = document.getElementById('details-file-row-template');
 
     for (const file of files) {
+      const dirty = this.dirtyFiles.get(file.index);
       const fragment = template.content.cloneNode(true);
       const row = fragment.querySelector('tr');
       row.dataset.index = String(file.index);
-      row.querySelector('.file-wanted-input').checked = file.wanted;
+      row.querySelector('.file-wanted-input').checked = dirty && dirty.wanted !== undefined ? dirty.wanted : file.wanted;
       row.querySelector('.file-name').textContent = file.name;
       row.querySelector('.file-name').title = file.name;
       row.querySelector('.file-size').textContent = formatBytes(file.length);
       row.querySelector('.file-progress').textContent = formatPercent(file.length > 0 ? file.bytesCompleted / file.length : 1);
-      row.querySelector('.file-priority-input').value = String(file.priority);
+      row.querySelector('.file-priority-input').value = String(dirty && dirty.priority !== undefined ? dirty.priority : file.priority);
       this.filesBody.appendChild(row);
     }
+  }
+
+  /**
+   * Marks an individual file row field ("wanted" checkbox or priority
+   * select) dirty so the next render() re-applies the user's edited value
+   * instead of the server's, without disabling polling for the rest of
+   * the modal.
+   */
+  handleFileFieldChange (event) {
+    const row = event.target.closest('tr[data-index]');
+
+    if (!row) {
+      return;
+    }
+
+    const index = Number(row.dataset.index);
+    const dirty = this.dirtyFiles.get(index) || {};
+
+    if (event.target.classList.contains('file-wanted-input')) {
+      dirty.wanted = event.target.checked;
+    } else if (event.target.classList.contains('file-priority-input')) {
+      dirty.priority = Number(event.target.value);
+    } else {
+      return;
+    }
+
+    this.dirtyFiles.set(index, dirty);
   }
 
   async handleSettingsSubmit (event) {
@@ -180,6 +236,7 @@ class TorrentDetailsModal {
           seedIdleMode: Number(this.seedIdleModeInput.value),
           seedIdleLimit: Number(this.seedIdleLimitInput.value)
         });
+        this.dirtySettingsFields.clear();
         this.render(torrent);
         this.onChanged();
       });
@@ -232,6 +289,7 @@ class TorrentDetailsModal {
           priorityNormal,
           priorityLow
         });
+        this.dirtyFiles.clear();
         this.render(torrent);
         this.onChanged();
       });
