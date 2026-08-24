@@ -1,8 +1,15 @@
 import { formatBytes, formatRate, formatEta, formatDate, formatPercent } from './format.js';
+import { getStatusPresentation, STATUS_CLASSES } from './torrentStatus.js';
+
+const SAVE_FEEDBACK_RESET_MS = 1500;
 
 /**
  * Handles the torrent details modal: read-only statistics, editable
  * per-torrent settings and the file selection/priority table.
+ *
+ * While open, it is refreshed by the torrent list's existing polling loop
+ * (via {@link TorrentDetailsModal#refreshIfOpen}) instead of running a
+ * second independent polling loop.
  */
 class TorrentDetailsModal {
   constructor ({ api, element, onChanged }) {
@@ -11,6 +18,9 @@ class TorrentDetailsModal {
     this.onChanged = onChanged;
     this.id = null;
     this.files = [];
+    this.isOpen = false;
+    this.savingSettings = false;
+    this.savingFiles = false;
 
     this.titleLabel = element.querySelector('#torrent-details-modal-label');
     this.errorBox = element.querySelector('#details-error');
@@ -33,6 +43,17 @@ class TorrentDetailsModal {
   init () {
     this.settingsForm.addEventListener('submit', (event) => this.handleSettingsSubmit(event));
     this.filesForm.addEventListener('submit', (event) => this.handleFilesSubmit(event));
+
+    // Track whether the modal is actually visible, so the shared torrent
+    // list polling loop knows when it can stop refreshing this modal's data
+    // (see refreshIfOpen()) instead of running a second polling loop.
+    this.element.addEventListener('shown.bs.modal', () => {
+      this.isOpen = true;
+    });
+    this.element.addEventListener('hidden.bs.modal', () => {
+      this.isOpen = false;
+      this.id = null;
+    });
   }
 
   showError (message) {
@@ -56,14 +77,46 @@ class TorrentDetailsModal {
     }
   }
 
+  /**
+   * Called by the torrent list after every poll/refresh so this modal's
+   * data stays live while it is open, without a second independent polling
+   * loop. `torrents` is the current torrent-list summary payload, used only
+   * to detect the torrent having been removed; the modal's own (richer)
+   * data is re-fetched with a single extra request.
+   */
+  async refreshIfOpen (torrents) {
+    if (!this.isOpen || this.id === null || this.savingSettings || this.savingFiles) {
+      return;
+    }
+
+    if (!torrents.some((torrent) => torrent.id === this.id)) {
+      this.showError('This torrent no longer exists. It may have been removed elsewhere.');
+      this.id = null;
+
+      return;
+    }
+
+    try {
+      const { torrent } = await this.api.getTorrent(this.id);
+      this.render(torrent);
+      this.showError(null);
+    } catch (error) {
+      this.showError(error.message);
+    }
+  }
+
   render (torrent) {
     this.titleLabel.textContent = torrent.name;
+
+    const presentation = getStatusPresentation(torrent);
+    this.progressBar.classList.remove(...STATUS_CLASSES);
+    this.progressBar.classList.add(presentation.progressClass);
 
     const percent = formatPercent(torrent.percentDone);
     this.progressBar.style.width = percent;
     this.progressLabel.textContent = percent;
 
-    this.element.querySelector('#details-status').textContent = torrent.statusLabel;
+    this.element.querySelector('#details-status').innerHTML = `<i class="fa-solid ${presentation.icon}" aria-hidden="true"></i> ${torrent.statusLabel}`;
     this.element.querySelector('#details-size').textContent = formatBytes(torrent.totalSize);
     this.element.querySelector('#details-downloaded').textContent = formatBytes(torrent.downloadedEver);
     this.element.querySelector('#details-uploaded').textContent = formatBytes(torrent.uploadedEver);
@@ -107,28 +160,46 @@ class TorrentDetailsModal {
 
   async handleSettingsSubmit (event) {
     event.preventDefault();
+
+    if (this.savingSettings) {
+      return;
+    }
+
     this.showError(null);
+    this.savingSettings = true;
+    const button = this.settingsForm.querySelector('button[type="submit"]');
 
     try {
-      const { torrent } = await this.api.updateTorrent(this.id, {
-        priority: Number(this.priorityInput.value),
-        peerLimit: Number(this.peerLimitInput.value),
-        downloadDir: this.downloadDirInput.value,
-        seedRatioMode: Number(this.seedRatioModeInput.value),
-        seedRatioLimit: Number(this.seedRatioLimitInput.value),
-        seedIdleMode: Number(this.seedIdleModeInput.value),
-        seedIdleLimit: Number(this.seedIdleLimitInput.value)
+      await this.withSaveFeedback(button, 'Save settings', async () => {
+        const { torrent } = await this.api.updateTorrent(this.id, {
+          priority: Number(this.priorityInput.value),
+          peerLimit: Number(this.peerLimitInput.value),
+          downloadDir: this.downloadDirInput.value,
+          seedRatioMode: Number(this.seedRatioModeInput.value),
+          seedRatioLimit: Number(this.seedRatioLimitInput.value),
+          seedIdleMode: Number(this.seedIdleModeInput.value),
+          seedIdleLimit: Number(this.seedIdleLimitInput.value)
+        });
+        this.render(torrent);
+        this.onChanged();
       });
-      this.render(torrent);
-      this.onChanged();
     } catch (error) {
       this.showError(error.message);
+    } finally {
+      this.savingSettings = false;
     }
   }
 
   async handleFilesSubmit (event) {
     event.preventDefault();
+
+    if (this.savingFiles) {
+      return;
+    }
+
     this.showError(null);
+    this.savingFiles = true;
+    const button = this.filesForm.querySelector('button[type="submit"]');
 
     const wanted = [];
     const unwanted = [];
@@ -153,17 +224,47 @@ class TorrentDetailsModal {
     }
 
     try {
-      const { torrent } = await this.api.updateTorrentFiles(this.id, {
-        wanted,
-        unwanted,
-        priorityHigh,
-        priorityNormal,
-        priorityLow
+      await this.withSaveFeedback(button, 'Save file selection', async () => {
+        const { torrent } = await this.api.updateTorrentFiles(this.id, {
+          wanted,
+          unwanted,
+          priorityHigh,
+          priorityNormal,
+          priorityLow
+        });
+        this.render(torrent);
+        this.onChanged();
       });
-      this.render(torrent);
-      this.onChanged();
     } catch (error) {
       this.showError(error.message);
+    } finally {
+      this.savingFiles = false;
+    }
+  }
+
+  /**
+   * Gives a save button immediate "in progress" feedback (spinner,
+   * disabled, so a slow tap/double submit can't fire the request twice),
+   * then a brief success/error indication, before restoring its normal
+   * label. The underlying `action` is still responsible for surfacing
+   * errors via {@link TorrentDetailsModal#showError} - a failed save never
+   * touches the form fields, so the user's changes are never discarded.
+   */
+  async withSaveFeedback (button, label, action) {
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving…';
+
+    try {
+      await action();
+      button.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i> Saved';
+    } catch (error) {
+      button.innerHTML = '<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Save failed';
+      throw error;
+    } finally {
+      window.setTimeout(() => {
+        button.disabled = false;
+        button.innerHTML = `<i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> ${label}`;
+      }, SAVE_FEEDBACK_RESET_MS);
     }
   }
 }

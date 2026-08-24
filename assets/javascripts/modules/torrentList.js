@@ -1,14 +1,5 @@
 import { formatBytes, formatRate, formatEta, formatDate, formatPercent } from './format.js';
-
-const STATUS_BADGE_CLASS = {
-  0: 'bg-secondary',
-  1: 'bg-info',
-  2: 'bg-info',
-  3: 'bg-info',
-  4: 'bg-primary',
-  5: 'bg-info',
-  6: 'bg-success'
-};
+import { getStatusPresentation, STATUS_CLASSES } from './torrentStatus.js';
 
 const POLL_INTERVAL_MS = 5000;
 
@@ -18,7 +9,7 @@ const POLL_INTERVAL_MS = 5000;
  * unrelated rows.
  */
 class TorrentList {
-  constructor ({ api, sortPreference, container, emptyState, countLabel, sortFieldSelect, sortDirectionButton, errorBanner, onDetails, onRemove }) {
+  constructor ({ api, sortPreference, container, emptyState, countLabel, sortFieldSelect, sortDirectionButton, errorBanner, onDetails, onRemove, onRefreshed }) {
     this.api = api;
     this.sortPreference = sortPreference;
     this.container = container;
@@ -29,6 +20,7 @@ class TorrentList {
     this.errorBanner = errorBanner;
     this.onDetails = onDetails;
     this.onRemove = onRemove;
+    this.onRefreshed = onRefreshed;
 
     this.rows = new Map();
     this.timer = null;
@@ -91,6 +83,7 @@ class TorrentList {
       const data = await this.api.getTorrents();
       this.showError(null);
       this.render(data.torrents);
+      this.onRefreshed?.(data.torrents);
     } catch (error) {
       this.showError(error.message);
     }
@@ -163,11 +156,16 @@ class TorrentList {
   updateRow (row, torrent) {
     row.querySelector('[data-field="name"]').textContent = torrent.name;
 
+    const presentation = getStatusPresentation(torrent);
     const badge = row.querySelector('[data-field="statusBadge"]');
-    badge.textContent = torrent.statusLabel;
-    badge.className = `badge torrent-status-badge ${STATUS_BADGE_CLASS[torrent.status] || 'bg-secondary'}`;
+    badge.classList.remove(...STATUS_CLASSES);
+    badge.classList.add(presentation.badgeClass);
+    row.querySelector('[data-field="statusIcon"]').className = `fa-solid ${presentation.icon}`;
+    row.querySelector('[data-field="statusLabel"]').textContent = torrent.statusLabel;
 
     const progressBar = row.querySelector('[data-field="progressBar"]');
+    progressBar.classList.remove(...STATUS_CLASSES);
+    progressBar.classList.add(presentation.progressClass);
     const percent = formatPercent(torrent.percentDone);
     progressBar.style.width = percent;
     progressBar.setAttribute('aria-valuenow', String(Math.round(torrent.percentDone * 100)));
@@ -176,6 +174,8 @@ class TorrentList {
     row.querySelector('[data-field="progressLabel"]').textContent = percent;
 
     row.querySelector('[data-field="size"]').textContent = formatBytes(torrent.totalSize);
+    row.querySelector('[data-field="downloaded"]').textContent = formatBytes(torrent.downloadedEver);
+    row.querySelector('[data-field="uploaded"]').textContent = formatBytes(torrent.uploadedEver);
     row.querySelector('[data-field="rateDownload"]').textContent = formatRate(torrent.rateDownload);
     row.querySelector('[data-field="rateUpload"]').textContent = formatRate(torrent.rateUpload);
     row.querySelector('[data-field="eta"]').textContent = `ETA ${formatEta(torrent.eta)}`;

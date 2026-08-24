@@ -34,6 +34,7 @@ final class TorrentFixtures
             'totalSize' => 2_000_000_000,
             'leftUntilDone' => 1_000_000_000,
             'downloadedEver' => 1_000_000_000,
+            'uploadedEver' => 300_000_000,
             'rateDownload' => 512_000,
             'rateUpload' => 128_000,
             'eta' => 3600,
