@@ -66,7 +66,8 @@ class Seedlet {
         detailsModalInstance.show();
         detailsModal.open(id);
       },
-      onRemove: (id, name) => removeModal.open(id, name)
+      onRemove: (id, name) => removeModal.open(id, name),
+      onRefreshed: (torrents) => detailsModal.refreshIfOpen(torrents)
     });
     this.torrentList.init();
 

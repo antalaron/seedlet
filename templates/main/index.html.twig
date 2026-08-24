@@ -58,7 +58,10 @@
                         <div class="flex-grow-1 min-width-0">
                             <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <span class="fw-semibold text-truncate torrent-name" data-field="name"></span>
-                                <span class="badge torrent-status-badge" data-field="statusBadge"></span>
+                                <span class="badge torrent-status-badge" data-field="statusBadge">
+                                    <i class="fa-solid" data-field="statusIcon" aria-hidden="true"></i>
+                                    <span data-field="statusLabel"></span>
+                                </span>
                             </div>
                             <div class="progress seedlet-progress mt-2">
                                 <div class="progress-bar" data-field="progressBar" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
@@ -66,6 +69,8 @@
                             </div>
                             <div class="d-flex flex-wrap column-gap-3 row-gap-1 mt-2 small text-muted">
                                 <span data-field="size"></span>
+                                <span><i class="fa-solid fa-download" aria-hidden="true"></i> <span data-field="downloaded"></span></span>
+                                <span><i class="fa-solid fa-upload" aria-hidden="true"></i> <span data-field="uploaded"></span></span>
                                 <span><i class="fa-solid fa-arrow-down" aria-hidden="true"></i> <span data-field="rateDownload"></span></span>
                                 <span><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> <span data-field="rateUpload"></span></span>
                                 <span data-field="eta"></span>
@@ -308,7 +313,7 @@
                     <template id="details-file-row-template">
                         <tr>
                             <td><input type="checkbox" class="form-check-input file-wanted-input"></td>
-                            <td class="text-truncate" style="max-width: 16rem;">
+                            <td class="file-name-cell">
                                 <i class="fa-regular fa-file text-body-secondary me-1" aria-hidden="true"></i><span class="file-name"></span>
                             </td>
                             <td class="file-size text-nowrap"></td>

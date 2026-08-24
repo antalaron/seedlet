@@ -34,14 +34,14 @@ final readonly class TorrentManager
 {
     private const LIST_FIELDS = [
         'id', 'name', 'status', 'percentDone', 'sizeWhenDone', 'totalSize',
-        'leftUntilDone', 'downloadedEver', 'rateDownload', 'rateUpload', 'eta',
+        'leftUntilDone', 'downloadedEver', 'uploadedEver', 'rateDownload', 'rateUpload', 'eta',
         'queuePosition', 'isFinished', 'isStalled', 'errorString', 'addedDate',
         'trackerStats',
     ];
 
     private const DETAIL_FIELDS = [
         ...self::LIST_FIELDS,
-        'uploadedEver', 'uploadRatio', 'downloadDir', 'doneDate', 'peer-limit',
+        'uploadRatio', 'downloadDir', 'doneDate', 'peer-limit',
         'seedRatioLimit', 'seedRatioMode', 'seedIdleLimit', 'seedIdleMode',
         'bandwidthPriority', 'downloadLimited', 'downloadLimit', 'uploadLimited',
         'uploadLimit', 'files', 'fileStats', 'peers',
@@ -145,13 +145,19 @@ final readonly class TorrentManager
 
     public function updateFiles(int $id, FileSelectionRequest $request): void
     {
+        // Transmission treats an *empty* files-wanted/-unwanted or
+        // priority-* list as "apply to every file in the torrent" rather
+        // than "apply to no file", so empty lists must be omitted here just
+        // like null ones - otherwise sending e.g. an empty "priority-normal"
+        // alongside a non-empty "priority-high" silently resets every file
+        // (including the ones just set to high) back to normal priority.
         $settings = array_filter([
             'files-wanted' => $request->wanted,
             'files-unwanted' => $request->unwanted,
             'priority-high' => $request->priorityHigh,
             'priority-normal' => $request->priorityNormal,
             'priority-low' => $request->priorityLow,
-        ], static fn (?array $value): bool => null !== $value);
+        ], static fn (?array $value): bool => null !== $value && [] !== $value);
 
         if ([] === $settings) {
             return;

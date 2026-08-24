@@ -162,13 +162,18 @@ body {
   color: $seedlet-body-color;
 }
 
-// Status badges: keep the existing bg-primary/bg-info/bg-success/bg-secondary
-// utility classes assigned in JS (no markup/behavior change needed), but
-// restyle them as soft, pill-shaped tags instead of Bootstrap's solid
-// contextual backgrounds, so the status coloring feels custom-designed.
+// Status badges: keep the existing bg-primary/bg-info/bg-success/bg-secondary/
+// bg-warning/bg-danger utility classes assigned in JS (no markup/behavior
+// change needed), but restyle them as soft, pill-shaped tags instead of
+// Bootstrap's solid contextual backgrounds, so the status coloring feels
+// custom-designed. Colors are assigned per actual Transmission torrent
+// status (see torrentStatus.js), not guessed from the download percentage:
+// gray = stopped, amber = queued/checking, green = downloading,
+// blue = completed/seeding, red = error.
 .torrent-status-badge {
   display: inline-flex;
   align-items: center;
+  gap: 0.3em;
   padding: 0.3em 0.7em;
   font-size: 0.72em;
   font-weight: 700;
@@ -195,6 +200,16 @@ body {
     background-color: rgba($seedlet-green, 0.16) !important;
     color: $seedlet-green-dark;
   }
+
+  &.bg-warning {
+    background-color: rgba($seedlet-amber, 0.16) !important;
+    color: $seedlet-amber-dark;
+  }
+
+  &.bg-danger {
+    background-color: rgba($seedlet-red, 0.14) !important;
+    color: $seedlet-red-dark;
+  }
 }
 
 // -----------------------------------------------------------------------
@@ -220,7 +235,27 @@ body {
 
 .seedlet-progress .progress-bar {
   background-color: rgba($seedlet-teal, 0.35);
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, background-color 0.2s ease;
+
+  &.bg-secondary {
+    background-color: rgba($seedlet-slate, 0.35) !important;
+  }
+
+  &.bg-info {
+    background-color: rgba($seedlet-blue, 0.35) !important;
+  }
+
+  &.bg-success {
+    background-color: rgba($seedlet-green, 0.35) !important;
+  }
+
+  &.bg-warning {
+    background-color: rgba($seedlet-amber, 0.4) !important;
+  }
+
+  &.bg-danger {
+    background-color: rgba($seedlet-red, 0.4) !important;
+  }
 }
 
 .seedlet-progress .progress-value {
@@ -271,3 +306,17 @@ body {
 .file-name {
   font-weight: 500;
 }
+
+// File names used to be truncated with an ellipsis, which hid the *end* of
+// long names - the exact spot where e.g. a TV episode number usually lives.
+// Wrapping instead keeps the whole name readable (and still works fine on
+// narrow/mobile screens, it just makes the row a little taller) while the
+// max-width keeps the column from pushing the size/progress/priority
+// columns off-screen.
+.file-name-cell {
+  max-width: 16rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+

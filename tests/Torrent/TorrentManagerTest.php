@@ -40,6 +40,7 @@ final class TorrentManagerTest extends TestCase
         $this->assertSame(1, $torrents[0]->id);
         $this->assertSame(10, $torrents[0]->seeders);
         $this->assertSame(3, $torrents[0]->leechers);
+        $this->assertSame(300_000_000, $torrents[0]->uploadedEver);
     }
 
     public function testGetTorrentReturnsDetail(): void
@@ -278,6 +279,37 @@ final class TorrentManagerTest extends TestCase
         $client->expects($this->never())->method('request');
 
         (new TorrentManager($client))->updateFiles(5, new FileSelectionRequest());
+    }
+
+    /**
+     * Regression test: Transmission's torrent-set treats an empty
+     * priority-high/-normal/-low or files-wanted/-unwanted list as "apply to
+     * every file", not "apply to no file". A request with an empty
+     * priorityNormal array (e.g. because no file is currently normal
+     * priority) must not send that empty list to Transmission, otherwise it
+     * would reset every file - including the one just set to high priority -
+     * back to normal.
+     */
+    public function testUpdateFilesOmitsEmptyPriorityLists(): void
+    {
+        $client = $this->createMock(TransmissionClientInterface::class);
+        $client->expects($this->once())
+            ->method('request')
+            ->with('torrent-set', [
+                'ids' => [5],
+                'files-wanted' => [0, 1],
+                'priority-high' => [0],
+            ])
+            ->willReturn([])
+        ;
+
+        (new TorrentManager($client))->updateFiles(5, new FileSelectionRequest(
+            wanted: [0, 1],
+            unwanted: [],
+            priorityHigh: [0],
+            priorityNormal: [],
+            priorityLow: [],
+        ));
     }
 
     public function testGetSessionSettings(): void
