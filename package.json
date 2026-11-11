@@ -5,7 +5,7 @@
     "@fortawesome/fontawesome-free": "^7.3.1",
     "@openfonts/open-sans_latin-ext": "^1.44.3",
     "@popperjs/core": "^2.11.8",
-    "@symfony/webpack-encore": "^7.0.0",
+    "@symfony/webpack-encore": "^7.2.1",
     "babel-plugin-polyfill-corejs3": "^1.0.0",
     "bootstrap": "^5.3.3",
     "core-js": "^3",
